@@ -11,7 +11,7 @@ rejection_rate_parallel <- function(x, m, sigma, n = length(x), N = 50, alpha = 
     registerDoParallel(cl)
     
     # Set working directory on each worker
-    clusterEvalQ(cl, setwd("C:/Users/franc/OneDrive - Politecnico di Milano/Documenti/ETH/Convexity_test"))
+    clusterEvalQ(cl, setwd("C:/Users/franc/OneDrive - Politecnico di Milano/Documenti/ETH/Convexity_test/Strict_convexity_test"))
     
     # Parallel loop: return a data.frame with both decision and error message
     iter_results <- foreach(i = 1:N, 
@@ -24,7 +24,7 @@ rejection_rate_parallel <- function(x, m, sigma, n = length(x), N = 50, alpha = 
                               
                               # Wrap iteration in tryCatch to capture errors and log them
                               tryCatch({
-                                source("main-v5.R")
+                                source("main.R")
                                 eps <- rnorm(n, 0, sigma)
                                 y <- m + eps
                                 

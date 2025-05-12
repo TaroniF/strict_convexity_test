@@ -21,7 +21,7 @@ sigma_list <- c(0.05, 0.1, 0.4, 1)
 n_list <- c(25, 50, 100)
 
 ## 4. Monte-Carlo settings
-N      <- 7 
+N      <- 501 
 alpha  <- 0.05
 set.seed(987)
 
