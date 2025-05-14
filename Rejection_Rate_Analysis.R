@@ -34,7 +34,7 @@ for (f_name in names(f_list)) {
   for (sigma in sigma_list) {
     for (n in n_list) {
       
-      ## equi-spaced design on [0,1]
+      ## equi‐spaced design on [0,1]
       x <- seq(0, 1, length.out = n)
       f <- f_list[[f_name]]
       m <- f(x)
@@ -42,15 +42,24 @@ for (f_name in names(f_list)) {
       message(sprintf("Simulation %d:  f = %s, sigma = %g, n = %d",
                       counter, f_name, sigma, n))
       
-      result_value <- rejection_rate_parallel(x, m, sigma, n, N, alpha, counter)
+      # returns a named numeric vector: c(decision_leq=…, decision_le=…, …)
+      result_values <- rejection_rate_parallel(x, m, sigma, n, N, alpha, counter)
       
-      results_list[[counter]] <- data.frame(
-        regression_function = f_name,
-        sigma   = sigma,
-        n       = n,
-        result  = result_value,
-        stringsAsFactors = FALSE
+      # bind your 3 “metadata” columns with the 4 decision‐rates in one row
+      results_list[[counter]] <- cbind(
+        data.frame(
+          regression_function    = f_name,
+          sigma                  = sigma,
+          n                      = n,
+          stringsAsFactors       = FALSE
+        ),
+        # turn the named vector into a one‐row data.frame
+        as.data.frame(
+          as.list(result_values),
+          stringsAsFactors = FALSE
+        )
       )
+      
       counter <- counter + 1
     }
   }
@@ -60,5 +69,5 @@ for (f_name in names(f_list)) {
 results_df <- do.call(rbind, results_list)
 results_df
 
-write.csv(results_df, file = "output.csv", row.names = FALSE)
+#write.csv(results_df, file = "results_second_order_bootstrap_no_continuity_correction_1.csv", row.names = FALSE)
 

@@ -347,14 +347,32 @@ convexity_test <- function(x, y, h_r = NULL, B_out = 100, B_in = 100, alpha = 0.
   # Decision and outputs
   p_value_observed <- mean(Tn <= Tn_boot_out)
   p_val    <- mean(p_value_in <= p_value_observed)
-  decision <- as.integer(p_val <= alpha) # 1 = reject H₀, 0 = do not reject
+  
+  
+  decision_leq <- as.integer(p_val <= alpha)
+  decision_le  <- as.integer(p_val < alpha)
+  
+  # Continuity correction
+
+  p_val_corrected <- mean(p_value_in < p_value_observed) + 0.5 * mean(p_value_in == p_value_observed)
+  
+  decision_leq_corrected <- as.integer(p_val_corrected <= alpha)
+  decision_le_corrected  <- as.integer(p_val_corrected < alpha)
+  
+  
   
   structure(list(Tn = Tn, h_r = h_r, h_d = h_d,
                  Critical_vals = Critical_vals,
                  p_value_in = p_value_in,
                  Tn_boot_out = Tn_boot_out,
                  p_value_observed = p_value_observed,
-                 p_value = p_val, decision = decision,
+                 p_value = p_val, 
+                 p_val_corrected = p_val_corrected,
+                 decision_leq = decision_leq,
+                 decision_le = decision_le,
+                 decision_leq_corrected = decision_leq_corrected,
+                 decision_le_corrected = decision_le_corrected,
+                 
                  x_grid = x_grid,
                  unconstrained_estimator = m_hat,
                  birke_dette_estimator   = bd_fit$m_c(x_grid),
