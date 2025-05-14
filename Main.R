@@ -302,6 +302,8 @@ convexity_test <- function(x, y, h_r = NULL, B_out = 100, B_in = 100, alpha = 0.
   
   p1  <- (sqrt(5) + 1) / (2 * sqrt(5))
   Critical_vals <- numeric(B_out)
+  Tn_boot_out <- numeric(B_out)
+  p_value_in <- numeric(B_out)
   
   for (b in seq_len(B_out)) {
     # Wild bootstraps multipliers
@@ -319,6 +321,7 @@ convexity_test <- function(x, y, h_r = NULL, B_out = 100, B_in = 100, alpha = 0.
     bd_star_fit     <- birke_dette_average_estimator(m_prime_star_iso, m_star, x_grid)
     m_c_star_hat    <- bd_star_fit$m_c(x)
     
+    Tn_boot_out[b] <- test_statistic(bd_inv_fun_star, m_prime_star, x_grid)
     
     Tn_boot_in <- numeric(B_in)
     
@@ -338,15 +341,19 @@ convexity_test <- function(x, y, h_r = NULL, B_out = 100, B_in = 100, alpha = 0.
     
     # 1-alpha critical value of inner bootstrap
     Critical_vals[b] <- quantile(Tn_boot_in, 1 - alpha, names = FALSE)
+    p_value_in[b] <- mean(Tn_boot_out[b] <= Tn_boot_in)
   }
   
-  
   # Decision and outputs
-  p_val    <- mean(Tn <= Critical_vals)
+  p_value_observed <- mean(Tn <= Tn_boot_out)
+  p_val    <- mean(p_value_in <= p_value_observed)
   decision <- as.integer(p_val <= alpha) # 1 = reject H₀, 0 = do not reject
   
   structure(list(Tn = Tn, h_r = h_r, h_d = h_d,
                  Critical_vals = Critical_vals,
+                 p_value_in = p_value_in,
+                 Tn_boot_out = Tn_boot_out,
+                 p_value_observed = p_value_observed,
                  p_value = p_val, decision = decision,
                  x_grid = x_grid,
                  unconstrained_estimator = m_hat,
@@ -355,3 +362,8 @@ convexity_test <- function(x, y, h_r = NULL, B_out = 100, B_in = 100, alpha = 0.
                  constrained_derivative_estimator = m_prime_iso),
             class = "convexity test")
 }
+
+
+
+
+
