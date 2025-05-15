@@ -41,7 +41,7 @@ min_positive_bandwidth <- function(x, tol = .Machine$double.eps) {
   # 3. half of the largest gap
   h0   <- max(gaps) / 2
   # 4. bump by a tiny amount so the kernel at exactly u=1 isn't zero
-  max(h0, x[1], 1-x[length(x)]) + tol
+  max(h0, xs[1], 1-xs[length(x)]) + tol
 }
 
 # Bandwidth selection via k‑fold CV using L2-error
@@ -300,10 +300,12 @@ convexity_test <- function(x, y, h_r = NULL, B_out = 100, B_in = 100, alpha = 0.
   # Residuals
   res <- y - m_c_hat
   
-  p1  <- (sqrt(5) + 1) / (2 * sqrt(5))
+  p1 <- (sqrt(5) + 1) / (2 * sqrt(5))
+  
   Critical_vals <- numeric(B_out)
   Tn_boot_out <- numeric(B_out)
   p_value_in <- numeric(B_out)
+  
   
   for (b in seq_len(B_out)) {
     # Wild bootstraps multipliers
@@ -331,6 +333,7 @@ convexity_test <- function(x, y, h_r = NULL, B_out = 100, B_in = 100, alpha = 0.
     for (i in seq_len(B_in)){
       # Inner bootstrap
       omega_star  <- ifelse(runif(n) <= p1, (1 - sqrt(5))/2, (1 + sqrt(5))/2)
+      
       y_star_star <- m_c_star_hat + omega_star * res_star
       
       m_prime_star_star <- as.numeric(W_p %*% matrix(y_star_star, ncol = 1))

@@ -21,7 +21,7 @@ sigma_list <- c(0.05, 0.1, 0.4, 1)
 n_list <- c(25, 50, 100)
 
 ## 4. Monte-Carlo settings
-N      <- 501 
+N      <- 301 
 alpha  <- 0.05
 set.seed(987)
 
@@ -69,5 +69,5 @@ for (f_name in names(f_list)) {
 results_df <- do.call(rbind, results_list)
 results_df
 
-#write.csv(results_df, file = "results_second_order_bootstrap_no_continuity_correction_1.csv", row.names = FALSE)
+write.csv(results_df, file = "results_second_order_bootstrap_continuity_correction_2.csv", row.names = FALSE)
 
