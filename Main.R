@@ -41,7 +41,7 @@ min_positive_bandwidth <- function(x, tol = .Machine$double.eps) {
   # 3. half of the largest gap
   h0   <- max(gaps) / 2
   # 4. bump by a tiny amount so the kernel at exactly u=1 isn't zero
-  max(h0, x[1], 1-x[length(x)]) + tol
+  max(h0, xs[1], 1-xs[length(x)]) + tol
 }
 
 # Bandwidth selection via k‑fold CV using L2-error
