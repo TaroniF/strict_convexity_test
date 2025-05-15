@@ -357,9 +357,9 @@ convexity_test <- function(x, y, h_r = NULL, B_out = 100, B_in = 100, alpha = 0.
   
   
   # Decision based on critical region
-  decision_critical_region_median <- as.integer(Tn <= median(Critical_vals))
-  decision_critical_region_mean <- as.integer(Tn <= mean(Critical_vals))
-  decision_critical_region_quantile <- as.integer(Tn <= quantile(Critical_vals, 1 - alpha, names = FALSE))
+  decision_critical_region_median <- as.integer(Tn >= median(Critical_vals))
+  decision_critical_region_mean <- as.integer(Tn >= mean(Critical_vals))
+  decision_critical_region_quantile <- as.integer(Tn >= quantile(Critical_vals, 1 - alpha, names = FALSE))
   
   
   # Decision based of p-value distribution
