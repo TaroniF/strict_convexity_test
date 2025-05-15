@@ -299,6 +299,8 @@ convexity_test <- function(x, y, h_r = NULL, B_out = 100, B_in = 100, alpha = 0.
   
   # Residuals
   res <- y - m_c_hat
+  # Center residuals
+  res <- res - mean(res)
   
   p1 <- (sqrt(5) + 1) / (2 * sqrt(5))
   
@@ -329,6 +331,9 @@ convexity_test <- function(x, y, h_r = NULL, B_out = 100, B_in = 100, alpha = 0.
     
     # Second order residuals
     res_star <- y_star - m_c_star_hat
+    # Center residuals
+    res_star <- res_star - mean(res_star)
+    
     
     for (i in seq_len(B_in)){
       # Inner bootstrap
@@ -344,21 +349,27 @@ convexity_test <- function(x, y, h_r = NULL, B_out = 100, B_in = 100, alpha = 0.
     
     # 1-alpha critical value of inner bootstrap
     Critical_vals[b] <- quantile(Tn_boot_in, 1 - alpha, names = FALSE)
-    p_value_in[b] <- mean(Tn_boot_out[b] <= Tn_boot_in)
+    p_value_in[b] <- (1+sum(Tn_boot_out[b] <= Tn_boot_in))/(1+B_in)
   }
   
   # Decision and outputs
-  p_value_observed <- mean(Tn <= Tn_boot_out)
-  p_val    <- mean(p_value_in <= p_value_observed)
+  p_value_observed <- (1+sum(Tn <= Tn_boot_out))/(B_out+1)
   
   
+  # Decision based on critical region
+  decision_critical_region_median <- as.integer(Tn <= median(Critical_vals))
+  decision_critical_region_mean <- as.integer(Tn <= mean(Critical_vals))
+  decision_critical_region_quantile <- as.integer(Tn <= quantile(Critical_vals, 1 - alpha, names = FALSE))
+  
+  
+  # Decision based of p-value distribution
+  p_val    <- (1+sum(p_value_in <= p_value_observed))/(1+B_out)
   decision_leq <- as.integer(p_val <= alpha)
   decision_le  <- as.integer(p_val < alpha)
   
   # Continuity correction
 
-  p_val_corrected <- mean(p_value_in < p_value_observed) + 0.5 * mean(p_value_in == p_value_observed)
-  
+  p_val_corrected <- (1+sum(p_value_in < p_value_observed) + 0.5 * sum(p_value_in == p_value_observed))/(1+B_out)
   decision_leq_corrected <- as.integer(p_val_corrected <= alpha)
   decision_le_corrected  <- as.integer(p_val_corrected < alpha)
   
@@ -376,11 +387,18 @@ convexity_test <- function(x, y, h_r = NULL, B_out = 100, B_in = 100, alpha = 0.
                  decision_leq_corrected = decision_leq_corrected,
                  decision_le_corrected = decision_le_corrected,
                  
+                 decision_critical_region_median = decision_critical_region_median,
+                 decision_critical_region_mean = decision_critical_region_mean,
+                 decision_critical_region_quantile = decision_critical_region_quantile,
+                 
                  x_grid = x_grid,
                  unconstrained_estimator = m_hat,
                  birke_dette_estimator   = bd_fit$m_c(x_grid),
                  unconstrained_derivative_estimator = m_primehat,
-                 constrained_derivative_estimator = m_prime_iso),
+                 constrained_derivative_estimator = m_prime_iso,
+            
+                 inv_derivative_function = bd_inv_fun),
+            
             class = "convexity test")
 }
 

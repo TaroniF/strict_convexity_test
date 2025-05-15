@@ -32,7 +32,10 @@ rejection_rate_parallel <- function(x, m, sigma,
                               c(test$decision_leq,
                                 test$decision_le,
                                 test$decision_leq_corrected,
-                                test$decision_le_corrected)
+                                test$decision_le_corrected,
+                                test$decision_critical_region_median,
+                                test$decision_critical_region_mean,
+                                test$decision_critical_region_quantile)
                             }, error = function(e) {
                               err_msg <<- conditionMessage(e)
                               rep(NA_real_, 4)
@@ -45,6 +48,9 @@ rejection_rate_parallel <- function(x, m, sigma,
                               decision_le             = decisions[2],
                               decision_leq_corrected  = decisions[3],
                               decision_le_corrected   = decisions[4],
+                              decision_critical_region_median = decisions[5],
+                              decision_critical_region_mean = decisions[6],
+                              decision_critical_region_quantile = decisions[7],
                               error                   = err_msg,
                               stringsAsFactors        = FALSE
                             )
@@ -68,7 +74,10 @@ rejection_rate_parallel <- function(x, m, sigma,
     decision_leq           = mean(decision_leq,           na.rm = TRUE),
     decision_le            = mean(decision_le,            na.rm = TRUE),
     decision_leq_corrected = mean(decision_leq_corrected, na.rm = TRUE),
-    decision_le_corrected  = mean(decision_le_corrected,  na.rm = TRUE)
+    decision_le_corrected  = mean(decision_le_corrected,  na.rm = TRUE),
+    decision_critical_region_median = mean(decision_critical_region_median,  na.rm = TRUE),
+    decision_critical_region_mean = mean(decision_critical_region_mean,  na.rm = TRUE),
+    decision_critical_region_quantile = mean(decision_critical_region_quantile,  na.rm = TRUE)
   ))
   class(rejection_rate) <- "rejection_rate"
   
