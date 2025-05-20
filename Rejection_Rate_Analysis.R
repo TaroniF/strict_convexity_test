@@ -8,7 +8,7 @@ source("rejection_rate_parallel.R")
 f_list <- list(
   m_convex = function(x){4*(x-0.5)^2},                       # super strictly convex
   m_linear = function(x){x},                                 # convex (not strictly)
-  m_concave = function(x){1-(exp(x-1)-exp(-1))/(1-exp(-1))}   # slightly non convex
+  m_concave = function(x){1-(exp(x-1)-exp(-1))/(1-exp(-1))}  # slightly non convex
 )
 
 ## 2. Error standard-deviations
