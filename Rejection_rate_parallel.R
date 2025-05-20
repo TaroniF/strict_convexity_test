@@ -1,64 +1,85 @@
-rejection_rate_parallel <- function(x, m, sigma, n = length(x), N = 50, alpha = 0.05, seed = 0) {
+rejection_rate_parallel <- function(x, m, sigma, 
+                                    n = length(x), 
+                                    N = 50, 
+                                    alpha = 0.05, 
+                                    seed = 0) {
   library(foreach)
   library(parallel)
   library(doParallel)
   
-  ncores <- parallel::detectCores() - 1
-  cl <- NULL
+  # ---- 1) spin up the cluster ----
+  ncores <- detectCores() - 1
+  cl <- makeCluster(ncores, outfile = "")
+  registerDoParallel(cl)
+  # make sure each worker sees your working directory (adjust path as needed)
+  clusterEvalQ(cl, setwd("C:/Users/franc/OneDrive - Politecnico di Milano/Documenti/ETH/Convexity_test/Strict_convexity_test"))
   
-  result <- tryCatch({
-    cl <- makeCluster(ncores, outfile = "")
-    registerDoParallel(cl)
-    
-    # Set working directory on each worker
-    clusterEvalQ(cl, setwd("C:/Users/franc/OneDrive - Politecnico di Milano/Documenti/ETH/Convexity_test/Strict_convexity_test"))
-    
-    # Parallel loop: return a data.frame with both decision and error message
-    iter_results <- foreach(i = 1:N, 
-                            .combine = rbind,
-                            .errorhandling = "pass") %dopar% {
-                              set.seed(167 * (i + 1) + seed)
+  # ---- 2) parallel loop, returning one row per i ----
+  iter_results <- foreach(i = seq_len(N), 
+                          .combine = rbind) %dopar% {
+                            set.seed(167 * (i + 1) + seed)
+                            
+                            # placeholder for error message
+                            err_msg <- NA_character_
+                            
+                            # try to compute the four decisions; on error, record it and return NAs
+                            decisions <- tryCatch({
+                              source("main.R")
+                              eps <- rnorm(n, 0, sigma)
+                              y   <- m + eps
                               
-                              decision <- NA
-                              err_msg <- ""
-                              
-                              # Wrap iteration in tryCatch to capture errors and log them
-                              tryCatch({
-                                source("main.R")
-                                eps <- rnorm(n, 0, sigma)
-                                y <- m + eps
-                                
-                                # Assume convexity_test returns a list with an element named 'decision'
-                                decision <- convexity_test(x = x, y = y, alpha = alpha)$decision
-                              }, error = function(e) {
-                                err_msg <<- conditionMessage(e)
-                              })
-                              
-                              data.frame(iteration = i, decision = decision, error = err_msg, stringsAsFactors = FALSE)
-                            }
-    
-    # Print error log: show only those iterations where an error occurred.
-    error_log <- iter_results[iter_results$error != "", ]
-    if(nrow(error_log) > 0){
-      message("Errors occurred in the following iterations:")
-      print(error_log)
-    } else {
-      message("No errors in any iteration.")
-    }
-    
-    # Compute and return the mean decision, ignoring NA values.
-    mean(iter_results$decision, na.rm = TRUE)
-    
-  }, error = function(e) {
-    message("ERROR in rejection_rate_parallel: ", conditionMessage(e))
-    NA_real_
-    
-  }, finally = {
-    if(!is.null(cl)){
-      stopCluster(cl)
-      message("Cluster stopped correctly")
-    }
-  })
+                              test <- convexity_test(x = x, y = y, alpha = alpha)
+                              c(test$decision_leq,
+                                test$decision_le,
+                                test$decision_leq_corrected,
+                                test$decision_le_corrected,
+                                test$decision_critical_region_median,
+                                test$decision_critical_region_mean,
+                                test$decision_critical_region_quantile)
+                            }, error = function(e) {
+                              err_msg <<- conditionMessage(e)
+                              rep(NA_real_, 4)
+                            })
+                            
+                            # build a one‐row data.frame
+                            data.frame(
+                              iteration               = i,
+                              decision_leq            = decisions[1],
+                              decision_le             = decisions[2],
+                              decision_leq_corrected  = decisions[3],
+                              decision_le_corrected   = decisions[4],
+                              decision_critical_region_median = decisions[5],
+                              decision_critical_region_mean = decisions[6],
+                              decision_critical_region_quantile = decisions[7],
+                              error                   = err_msg,
+                              stringsAsFactors        = FALSE
+                            )
+                          }
   
-  return(result)
+  # ---- 3) tear down the cluster ----
+  stopCluster(cl)
+  message("Cluster stopped.")
+  
+  # ---- 4) report any errors ----
+  errs <- subset(iter_results, !is.na(error))
+  if (nrow(errs) > 0) {
+    message("Errors occurred in these iterations:")
+    print(errs)
+  } else {
+    message("No errors in any iteration.")
+  }
+  
+  # ---- 5) compute the four rejection‐rates ----
+  rejection_rate <- with(iter_results, c(
+    decision_leq           = mean(decision_leq,           na.rm = TRUE),
+    decision_le            = mean(decision_le,            na.rm = TRUE),
+    decision_leq_corrected = mean(decision_leq_corrected, na.rm = TRUE),
+    decision_le_corrected  = mean(decision_le_corrected,  na.rm = TRUE),
+    decision_critical_region_median = mean(decision_critical_region_median,  na.rm = TRUE),
+    decision_critical_region_mean = mean(decision_critical_region_mean,  na.rm = TRUE),
+    decision_critical_region_quantile = mean(decision_critical_region_quantile,  na.rm = TRUE)
+  ))
+  class(rejection_rate) <- "rejection_rate"
+  
+  return(rejection_rate)
 }

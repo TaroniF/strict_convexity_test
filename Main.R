@@ -299,9 +299,15 @@ convexity_test <- function(x, y, h_r = NULL, B_out = 100, B_in = 100, alpha = 0.
   
   # Residuals
   res <- y - m_c_hat
+  # Center residuals
+  res <- res - mean(res)
   
-  p1  <- (sqrt(5) + 1) / (2 * sqrt(5))
+  p1 <- (sqrt(5) + 1) / (2 * sqrt(5))
+  
   Critical_vals <- numeric(B_out)
+  Tn_boot_out <- numeric(B_out)
+  p_value_in <- numeric(B_out)
+  
   
   for (b in seq_len(B_out)) {
     # Wild bootstraps multipliers
@@ -319,15 +325,20 @@ convexity_test <- function(x, y, h_r = NULL, B_out = 100, B_in = 100, alpha = 0.
     bd_star_fit     <- birke_dette_average_estimator(m_prime_star_iso, m_star, x_grid)
     m_c_star_hat    <- bd_star_fit$m_c(x)
     
+    Tn_boot_out[b] <- test_statistic(bd_inv_fun_star, m_prime_star, x_grid)
     
     Tn_boot_in <- numeric(B_in)
     
     # Second order residuals
     res_star <- y_star - m_c_star_hat
+    # Center residuals
+    res_star <- res_star - mean(res_star)
+    
     
     for (i in seq_len(B_in)){
       # Inner bootstrap
       omega_star  <- ifelse(runif(n) <= p1, (1 - sqrt(5))/2, (1 + sqrt(5))/2)
+      
       y_star_star <- m_c_star_hat + omega_star * res_star
       
       m_prime_star_star <- as.numeric(W_p %*% matrix(y_star_star, ncol = 1))
@@ -338,20 +349,60 @@ convexity_test <- function(x, y, h_r = NULL, B_out = 100, B_in = 100, alpha = 0.
     
     # 1-alpha critical value of inner bootstrap
     Critical_vals[b] <- quantile(Tn_boot_in, 1 - alpha, names = FALSE)
+    p_value_in[b] <- (1+sum(Tn_boot_out[b] <= Tn_boot_in))/(1+B_in)
   }
   
-  
   # Decision and outputs
-  p_val    <- mean(Tn <= Critical_vals)
-  decision <- as.integer(p_val <= alpha) # 1 = reject H₀, 0 = do not reject
+  p_value_observed <- (1+sum(Tn <= Tn_boot_out))/(B_out+1)
+  
+  
+  # Decision based on critical region
+  decision_critical_region_median <- as.integer(Tn >= median(Critical_vals))
+  decision_critical_region_mean <- as.integer(Tn >= mean(Critical_vals))
+  decision_critical_region_quantile <- as.integer(Tn >= quantile(Critical_vals, 1 - alpha, names = FALSE))
+  
+  
+  # Decision based of p-value distribution
+  p_val    <- (1+sum(p_value_in <= p_value_observed))/(1+B_out)
+  decision_leq <- as.integer(p_val <= alpha)
+  decision_le  <- as.integer(p_val < alpha)
+  
+  # Continuity correction
+
+  p_val_corrected <- (1+sum(p_value_in < p_value_observed) + 0.5 * sum(p_value_in == p_value_observed))/(1+B_out)
+  decision_leq_corrected <- as.integer(p_val_corrected <= alpha)
+  decision_le_corrected  <- as.integer(p_val_corrected < alpha)
+  
+  
   
   structure(list(Tn = Tn, h_r = h_r, h_d = h_d,
                  Critical_vals = Critical_vals,
-                 p_value = p_val, decision = decision,
+                 p_value_in = p_value_in,
+                 Tn_boot_out = Tn_boot_out,
+                 p_value_observed = p_value_observed,
+                 p_value = p_val, 
+                 p_val_corrected = p_val_corrected,
+                 decision_leq = decision_leq,
+                 decision_le = decision_le,
+                 decision_leq_corrected = decision_leq_corrected,
+                 decision_le_corrected = decision_le_corrected,
+                 
+                 decision_critical_region_median = decision_critical_region_median,
+                 decision_critical_region_mean = decision_critical_region_mean,
+                 decision_critical_region_quantile = decision_critical_region_quantile,
+                 
                  x_grid = x_grid,
                  unconstrained_estimator = m_hat,
                  birke_dette_estimator   = bd_fit$m_c(x_grid),
                  unconstrained_derivative_estimator = m_primehat,
-                 constrained_derivative_estimator = m_prime_iso),
+                 constrained_derivative_estimator = m_prime_iso,
+            
+                 inv_derivative_function = bd_inv_fun),
+            
             class = "convexity test")
 }
+
+
+
+
+

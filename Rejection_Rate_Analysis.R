@@ -6,12 +6,9 @@ source("rejection_rate_parallel.R")
 ###########################################
 ## 1. Regression functions
 f_list <- list(
-  f0 = function(x){4*(x-0.5)^2},                       # super strictly convex
-  f1 = function(x){(exp(x-1)-exp(-1))/(1-exp(-1))},    # slightly strictly convex
-  f2 = function(x){x},                                 # convex (not strictly)
-  f3 = function(x){-4*(x-0.5)^2},                      # super non convex
-  f4 = function(x){1-(exp(x-1)-exp(-1))/(1-exp(-1))},  # slightly non convex
-  f5 = function(x){((x^3-x^2)+(4/27))*27/4}            # small convexity violation
+  m_convex = function(x){4*(x-0.5)^2},                       # super strictly convex
+  m_linear = function(x){x},                                 # convex (not strictly)
+  m_concave = function(x){1-(exp(x-1)-exp(-1))/(1-exp(-1))}  # slightly non convex
 )
 
 ## 2. Error standard-deviations
@@ -21,9 +18,9 @@ sigma_list <- c(0.05, 0.1, 0.4, 1)
 n_list <- c(25, 50, 100)
 
 ## 4. Monte-Carlo settings
-N      <- 501 
+N      <- 301
 alpha  <- 0.05
-set.seed(987)
+set.seed(1)
 
 ## 5. Storage
 results_list <- list()
@@ -34,7 +31,7 @@ for (f_name in names(f_list)) {
   for (sigma in sigma_list) {
     for (n in n_list) {
       
-      ## equi-spaced design on [0,1]
+      ## equi‐spaced design on [0,1]
       x <- seq(0, 1, length.out = n)
       f <- f_list[[f_name]]
       m <- f(x)
@@ -42,15 +39,26 @@ for (f_name in names(f_list)) {
       message(sprintf("Simulation %d:  f = %s, sigma = %g, n = %d",
                       counter, f_name, sigma, n))
       
-      result_value <- rejection_rate_parallel(x, m, sigma, n, N, alpha, counter)
+      # returns a named numeric vector: c(decision_leq=…, decision_le=…, …)
+      result_values <- rejection_rate_parallel(x, m, sigma, n, N, alpha, counter)
       
-      results_list[[counter]] <- data.frame(
-        regression_function = f_name,
-        sigma   = sigma,
-        n       = n,
-        result  = result_value,
-        stringsAsFactors = FALSE
+      # bind your 3 “metadata” columns with the 4 decision‐rates in one row
+      results_list[[counter]] <- cbind(
+        data.frame(
+          regression_function    = f_name,
+          sigma                  = sigma,
+          n                      = n,
+          stringsAsFactors       = FALSE
+        ),
+        # turn the named vector into a one‐row data.frame
+        as.data.frame(
+          as.list(result_values),
+          stringsAsFactors = FALSE
+        )
       )
+      
+      print(results_list[[counter]])
+      
       counter <- counter + 1
     }
   }
@@ -60,5 +68,5 @@ for (f_name in names(f_list)) {
 results_df <- do.call(rbind, results_list)
 results_df
 
-write.csv(results_df, file = "output.csv", row.names = FALSE)
+write.csv(results_df, file = "results_second_order_bootstrap_5_301.csv", row.names = FALSE)
 
